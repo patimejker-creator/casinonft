@@ -4,6 +4,25 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NFT Casino Pro</title>
+<script>
+// Загружаем TON Connect с fallback на несколько CDN
+(function(){
+  const cdns = [
+    'https://unpkg.com/@tonconnect/ui@2.0.2/dist/tonconnect-ui.min.js',
+    'https://cdn.jsdelivr.net/npm/@tonconnect/ui@2.0.2/dist/tonconnect-ui.min.js',
+    'https://unpkg.com/@tonconnect/ui@1.0.0-beta.6/dist/tonconnect-ui.min.js',
+  ];
+  let idx = 0;
+  function tryNext(){
+    if(idx >= cdns.length) return;
+    const s = document.createElement('script');
+    s.src = cdns[idx++];
+    s.onerror = tryNext;
+    document.head.appendChild(s);
+  }
+  tryNext();
+})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700;900&display=swap');
 
@@ -151,7 +170,24 @@ html,body{width:100%;min-height:100%;background:var(--black);font-family:'Inter'
 .result-push{background:var(--card2);color:var(--muted);border:1px solid var(--border);display:block}
 
 /* ── ROULETTE ── */
-.roulette-wrap{display:flex;justify-content:center;margin-bottom:1.25rem;position:relative}
+.roulette-wrap{display:flex;justify-content:center;margin-bottom:1.25rem;position:relative;flex-direction:column;align-items:center}
+.roulette-arrow{
+  width:0;height:0;
+  border-left:12px solid transparent;
+  border-right:12px solid transparent;
+  border-top:24px solid var(--gold);
+  filter:drop-shadow(0 0 8px rgba(240,201,64,.8));
+  z-index:10;margin-bottom:-4px;
+  animation:arrowPulse 1s ease-in-out infinite alternate;
+}
+@keyframes arrowPulse{from{filter:drop-shadow(0 0 4px rgba(240,201,64,.5))}to{filter:drop-shadow(0 0 14px rgba(240,201,64,1))}}
+.roulette-color-indicator{
+  margin-top:10px;display:flex;align-items:center;gap:10px;
+  padding:8px 20px;border-radius:50px;
+  font-size:14px;font-weight:600;letter-spacing:.5px;
+  transition:all .4s;border:1.5px solid var(--border2);background:var(--card2);
+}
+.rci-dot{width:16px;height:16px;border-radius:50%;display:inline-block;transition:background .4s}
 .roulette-outer{width:200px;height:200px;border-radius:50%;padding:6px;
   background:linear-gradient(135deg,var(--gold),var(--purple),var(--gold));
   box-shadow:0 0 40px rgba(124,58,237,.4),0 0 80px rgba(240,201,64,.15);
@@ -428,7 +464,66 @@ input[type=range]::-webkit-slider-thumb{
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
-/* ── WIN/LOSE OVERLAY ── */
+/* ── TON CONNECT ── */
+.ton-connect-btn{
+  display:flex;align-items:center;gap:8px;padding:8px 18px;
+  background:linear-gradient(135deg,#003352,#004f7c);
+  border:1px solid #0088cc88;border-radius:50px;
+  font-size:13px;font-weight:600;color:#fff;cursor:pointer;
+  transition:all .3s;box-shadow:0 0 20px rgba(0,136,204,.2);
+  white-space:nowrap;
+}
+.ton-connect-btn:hover{box-shadow:0 0 30px rgba(0,136,204,.5);border-color:#0088cc;transform:translateY(-1px)}
+.ton-connect-btn.connected{background:linear-gradient(135deg,#004f00,#006600);border-color:#00cc4488}
+.ton-addr{font-size:11px;opacity:.7;font-weight:400}
+
+/* ── DEPOSIT MODAL ── */
+#deposit-modal{
+  position:fixed;inset:0;z-index:8000;display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#deposit-modal.open{opacity:1;pointer-events:all}
+.deposit-sheet{
+  background:linear-gradient(180deg,var(--card2),var(--deep));
+  border:1px solid var(--border2);border-radius:24px 24px 0 0;
+  padding:1.5rem;width:100%;max-width:560px;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.1,.64,1);
+}
+#deposit-modal.open .deposit-sheet{transform:translateY(0)}
+.deposit-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--text);margin-bottom:4px}
+.deposit-sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem}
+.deposit-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
+.dam{
+  padding:14px 8px;border-radius:14px;text-align:center;cursor:pointer;
+  background:var(--card);border:1.5px solid var(--border2);
+  transition:all .25s;font-weight:600;font-size:13px;color:var(--text);
+}
+.dam:hover{border-color:var(--ton);transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,136,204,.2)}
+.dam.sel{border-color:var(--ton);background:linear-gradient(135deg,#003352,#004f7c);box-shadow:0 0 15px rgba(0,136,204,.3)}
+.dam-ton{font-size:18px;font-weight:700;color:#4db8ff}
+.dam-coins{font-size:11px;color:var(--muted);margin-top:2px}
+.deposit-addr{
+  background:var(--card);border:1px solid var(--border2);border-radius:12px;
+  padding:10px 14px;font-size:11px;color:var(--muted);
+  word-break:break-all;margin-bottom:1rem;line-height:1.5;
+}
+.deposit-addr span{color:var(--text);font-weight:500}
+.deposit-btns{display:flex;gap:10px}
+.dep-confirm{flex:1;padding:14px;border-radius:14px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#005f99,#0088cc);color:#fff;
+  font-size:15px;font-weight:700;font-family:'Orbitron',monospace;
+  box-shadow:0 4px 20px rgba(0,136,204,.4);transition:all .25s}
+.dep-confirm:hover{box-shadow:0 6px 30px rgba(0,136,204,.6);transform:translateY(-2px)}
+.dep-confirm:disabled{opacity:.4;cursor:default;transform:none}
+.dep-cancel{padding:14px 20px;border-radius:14px;border:1px solid var(--border2);
+  background:var(--card);color:var(--muted);cursor:pointer;font-size:14px;transition:all .2s}
+.dep-cancel:hover{border-color:var(--border2);color:var(--text)}
+
+.tc-status{font-size:12px;color:var(--muted);text-align:center;padding:8px;margin-bottom:8px;min-height:20px}
+.tc-status.ok{color:var(--green)}
+.tc-status.err{color:var(--red)}
+
 #result-overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;z-index:9000;transition:opacity .35s}
 #result-overlay.visible{opacity:1;pointer-events:all}
 #result-overlay.win-overlay{background:radial-gradient(ellipse at center,rgba(5,50,20,0.97) 0%,rgba(5,25,10,0.99) 100%)}
@@ -465,9 +560,62 @@ input[type=range]::-webkit-slider-thumb{
 @keyframes screenFlash{0%{opacity:.5}25%{opacity:.3}50%{opacity:.15}100%{opacity:0}}
 @keyframes coinFloat{0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}100%{opacity:0;transform:translateY(-200px) rotate(720deg) scale(.5)}}
 @keyframes crackAppear{0%{opacity:0}100%{opacity:.25}}
+
+/* ── ROCKET GAME ── */
+.rocket-arena{
+  position:relative;width:100%;height:220px;
+  background:linear-gradient(180deg,#000510 0%,#030d24 60%,#0a1a3a 100%);
+  border-radius:16px;border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:12px;
+}
+#rocket-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+.rocket-multiplier{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;font-size:36px;font-weight:900;
+  color:#fff;text-shadow:0 0 20px rgba(124,58,237,.8);
+  pointer-events:none;transition:color .2s;z-index:5;
+}
+.rocket-emoji{
+  position:absolute;bottom:20px;left:20px;font-size:32px;
+  transition:all .1s;z-index:5;filter:drop-shadow(0 0 8px rgba(255,100,0,.8));
+}
+.rocket-history{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;min-height:28px;}
+.rh-badge{
+  padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;
+  animation:fadeUp .3s ease;
+}
+.rh-low{background:#1a0505;color:#f87171;border:1px solid #ef444433}
+.rh-mid{background:#0a1a05;color:#4ade80;border:1px solid #22c55e33}
+.rh-high{background:#1a1000;color:var(--gold);border:1px solid var(--gold)44}
+.rh-mega{background:linear-gradient(135deg,#1a0050,#2d0080);color:#c084fc;border:1px solid #7c3aed55}
 </style>
 </head>
 <body>
+
+<!-- DEPOSIT MODAL -->
+<div id="deposit-modal">
+  <div class="deposit-sheet">
+    <div class="deposit-title">💎 Пополнение TON</div>
+    <div class="deposit-sub">Выбери сумму — Tonkeeper откроется автоматически</div>
+    <div class="deposit-amounts">
+      <div class="dam" onclick="selectDep(this,0.5)"><div class="dam-ton">0.5 TON</div><div class="dam-coins">500 монет</div></div>
+      <div class="dam" onclick="selectDep(this,1)"><div class="dam-ton">1 TON</div><div class="dam-coins">1 100 монет</div></div>
+      <div class="dam" onclick="selectDep(this,2)"><div class="dam-ton">2 TON</div><div class="dam-coins">2 400 монет</div></div>
+      <div class="dam" onclick="selectDep(this,5)"><div class="dam-ton">5 TON</div><div class="dam-coins">6 500 монет</div></div>
+      <div class="dam" onclick="selectDep(this,10)"><div class="dam-ton">10 TON</div><div class="dam-coins">14 000 монет</div></div>
+      <div class="dam" onclick="selectDep(this,25)"><div class="dam-ton">25 TON</div><div class="dam-coins">37 500 монет</div></div>
+    </div>
+    <div class="deposit-addr">
+      Адрес казино:<br>
+      <span>UQDEHu88rdV1a3qOzc24xKXAxxjEmRkQJQIcCvANvLNygw4y</span>
+    </div>
+    <div class="tc-status" id="dep-status"></div>
+    <div class="deposit-btns">
+      <button class="dep-confirm" id="dep-confirm-btn" onclick="confirmDeposit()" disabled>Отправить TON</button>
+      <button class="dep-cancel" onclick="closeDepModal()">Отмена</button>
+    </div>
+  </div>
+</div>
 
 <canvas id="confetti-canvas"></canvas>
 <div id="screen-flash"></div>
@@ -502,10 +650,13 @@ input[type=range]::-webkit-slider-thumb{
         <span class="coin-icon">◈</span>
         <span id="balance">1&nbsp;000</span> монет
       </div>
-      <div class="balance-chip ton-chip" id="ton-chip" onclick="showScreen(&#39;wallet&#39;)">
+      <div class="balance-chip ton-chip" id="ton-chip">
         <span class="coin-icon">💎</span>
-        <span id="ton-balance">12.5</span> TON
+        <span id="ton-balance">0.0</span> TON
       </div>
+      <button class="ton-connect-btn" id="tc-btn" onclick="tcAction()">
+        <span>💎</span><span id="tc-label">Подключить кошелёк</span>
+      </button>
       <div class="balance-chip" id="nft-chip" style="background:linear-gradient(135deg,#1e0a4f,#2d1080);border-color:#7c3aed44;cursor:pointer" onclick="showScreen(&#39;nft&#39;)">
         <span class="coin-icon">🎴</span>
         <span id="nft-count">0</span> NFT
@@ -681,7 +832,8 @@ input[type=range]::-webkit-slider-thumb{
     <button class="nav-btn" onclick="showScreen(&#39;mines&#39;,this)"><span class="nav-icon">💣</span>Мины</button>
     <button class="nav-btn" onclick="showScreen(&#39;wallet&#39;,this)"><span class="nav-icon">👛</span>Кошелёк</button>
     <button class="nav-btn" onclick="showScreen(&#39;nft&#39;,this)"><span class="nav-icon">🎴</span>NFT</button>
-    <button class="nav-btn" onclick="showScreen(&#39;reviews&#39;,this)"><span class="nav-icon">⭐</span>Отзывы</button>
+    <button class="nav-btn" onclick="showScreen('rocket',this)"><span class="nav-icon">🚀</span>Ракета</button>
+    <button class="nav-btn" onclick="showScreen('reviews',this)"><span class="nav-icon">⭐</span>Отзывы</button>
   </div>
 
   <!-- ── ROULETTE ── -->
@@ -698,8 +850,13 @@ input[type=range]::-webkit-slider-thumb{
     <div class="game-card">
       <div class="game-title"><span class="game-title-icon">🎡</span>Рулетка</div>
       <div class="roulette-wrap">
+        <div class="roulette-arrow" id="r-arrow"></div>
         <div class="roulette-outer">
           <div class="roulette-wheel" id="wheel" style="transform: rotate(1673.51deg);"><div class="roulette-center">◉</div></div>
+        </div>
+        <div class="roulette-color-indicator" id="r-color-indicator">
+          <span class="rci-dot" id="rci-dot" style="background:#555"></span>
+          <span id="rci-text">Крути колесо!</span>
         </div>
       </div>
       <div style="text-align:center;font-size:28px;font-weight:700;margin-bottom:1rem;color:var(--gold);font-family:&#39;Orbitron&#39;,monospace;" id="r-number">24</div>
@@ -876,6 +1033,46 @@ input[type=range]::-webkit-slider-thumb{
     <div class="game-card">
       <div class="game-title"><span class="game-title-icon">🎴</span>Коллекция NFT</div>
       <div id="nft-collection-grid"><div class="empty-nft"><div class="empty-nft-icon">🎴</div><div>NFT ещё нет</div><div style="font-size:12px;margin-top:4px">Играй на зелёный в рулетке!</div></div></div>
+    </div>
+  </div>
+
+  <!-- ── ROCKET ── -->
+  <div class="screen" id="screen-rocket">
+    <div class="game-card">
+      <div class="game-title"><span class="game-title-icon">🚀</span>Ракета</div>
+      <div class="rocket-arena" id="rocket-arena">
+        <canvas id="rocket-canvas" width="460" height="220"></canvas>
+        <div class="rocket-multiplier" id="rocket-mult">1.00x</div>
+        <div class="rocket-emoji" id="rocket-emoji">🚀</div>
+      </div>
+      <div class="rocket-history" id="rocket-history"></div>
+      <div class="bet-row">
+        <span class="bet-label">Ставка:</span>
+        <div class="bet-chips">
+          <div class="chip-btn" onclick="selectBet('rocket',10,this)">10</div>
+          <div class="chip-btn" onclick="selectBet('rocket',25,this)">25</div>
+          <div class="chip-btn" onclick="selectBet('rocket',50,this)">50</div>
+          <div class="chip-btn" onclick="selectBet('rocket',100,this)">100</div>
+        </div>
+        <span class="bet-val" id="rocket-bet-val">0</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+        <div style="font-size:12px;color:var(--muted)">Авто-вывод при:</div>
+        <select id="rocket-auto" style="background:var(--card2);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:6px 10px;font-size:13px;cursor:pointer;">
+          <option value="0">Вручную</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+          <option value="5">5x</option>
+          <option value="10">10x</option>
+          <option value="20">20x</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="startRocket()" id="rocket-start-btn">🚀 Запустить!</button>
+        <button class="btn btn-gold" onclick="cashoutRocket()" id="rocket-cashout-btn" disabled>💰 Забрать</button>
+      </div>
+      <div class="result-box" id="rocket-result"></div>
     </div>
   </div>
 
@@ -1261,13 +1458,14 @@ function showScreen(id, btn){
 }
 
 function selectBet(game, v, el){
-  const map = {r:'#screen-roulette',bj:'#screen-blackjack',dice:'#screen-dice',mines:'#screen-mines'};
+  const map = {r:'#screen-roulette',bj:'#screen-blackjack',dice:'#screen-dice',mines:'#screen-mines',rocket:'#screen-rocket'};
   document.querySelectorAll(map[game]+' .chip-btn').forEach(b=>b.classList.remove('sel'));
   el.classList.add('sel');
   if(game==='r'){rBet=v;document.getElementById('r-bet-val').textContent=v;}
   if(game==='bj'){if(!bjGameOn){bjBet=v;document.getElementById('bj-bet-val').textContent=v;}}
   if(game==='dice'){diceBet=v;document.getElementById('dice-bet-val').textContent=v;}
   if(game==='mines'){if(!minesActive){minesBet=v;document.getElementById('mines-bet-val').textContent=v;}}
+  if(game==='rocket'){if(!rocketActive){rocketBet=v;document.getElementById('rocket-bet-val').textContent=v;}}
 }
 
 // ── ROULETTE ──
@@ -1296,6 +1494,13 @@ function spinRoulette(){
   setTimeout(()=>{
     document.getElementById('r-number').textContent=num;
     const isRed=redNums.includes(num),isGreen=num===0,isBlack=!isRed&&!isGreen;
+    // Update color indicator
+    const dot=document.getElementById('rci-dot');
+    const txt=document.getElementById('rci-text');
+    const ind=document.getElementById('r-color-indicator');
+    if(isGreen){dot.style.background='#22c55e';txt.textContent='🟢 Зелёное (0)';ind.style.borderColor='#22c55e';ind.style.background='linear-gradient(135deg,#052213,#083a1e)';}
+    else if(isRed){dot.style.background='#ef4444';txt.textContent='🔴 Красное ('+num+')';ind.style.borderColor='#ef4444';ind.style.background='linear-gradient(135deg,#1f0707,#3b0e0e)';}
+    else{dot.style.background='#888';txt.textContent='⚫ Чёрное ('+num+')';ind.style.borderColor='#555';ind.style.background='linear-gradient(135deg,#111,#222)';}
     let win=0,msg='',cls='result-lose',nft=null;
 
     if(rBetType==='red'&&isRed){win=rBet*2;}
@@ -1569,6 +1774,171 @@ function addWinToTicker(amount, game){
   buildTicker();
 }
 
+// ── TON CONNECT ──
+const CASINO_ADDR = 'UQDEHu88rdV1a3qOzc24xKXAxxjEmRkQJQIcCvANvLNygw4y';
+const COINS_PER_TON = 1000; // базовый курс, бонус считается в модалке
+let tonConnectUI = null;
+let tcWallet = null;
+let selectedDepTon = 0;
+
+// Курс монет (с бонусом)
+const DEP_TABLE = {0.5:500, 1:1100, 2:2400, 5:6500, 10:14000, 25:37500};
+
+(async function initTonConnect(){
+  let attempts = 0;
+  while(attempts < 50){
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+    // Пробуем все варианты имён
+    const UI = window.TonConnectUI 
+      || window.TON_CONNECT_UI?.TonConnectUI
+      || window.TonConnect?.TonConnectUI
+      || window['@tonconnect/ui']?.TonConnectUI;
+    if(UI){ window.__TonConnectUIClass = UI; break; }
+  }
+
+  if(!window.__TonConnectUIClass){
+    const tonKeys = Object.keys(window).filter(k => k.toLowerCase().includes('ton'));
+    console.log('TON globals found:', tonKeys);
+    console.warn('TON Connect UI не загрузился');
+    document.getElementById('tc-btn').title = 'TON Connect недоступен';
+    return;
+  }
+
+  try {
+    tonConnectUI = new window.__TonConnectUIClass({
+      manifestUrl: 'https://raw.githubusercontent.com/ton-connect/demo-dapp/master/public/tonconnect-manifest.json',
+      buttonRootId: null
+    });
+
+    tonConnectUI.onStatusChange(wallet => {
+      tcWallet = wallet;
+      updateTcBtn();
+      if(wallet){
+        // получаем баланс через toncenter
+        fetchTonBalance(wallet.account.address);
+      }
+    });
+  } catch(e) {
+    console.warn('TON Connect init error:', e);
+  }
+})();
+
+function updateTcBtn(){
+  const btn = document.getElementById('tc-btn');
+  const label = document.getElementById('tc-label');
+  if(tcWallet){
+    const addr = tcWallet.account.address;
+    const short = addr.slice(0,4)+'...'+addr.slice(-4);
+    label.innerHTML = short + ' <span class="ton-addr">✓ подключён</span>';
+    btn.classList.add('connected');
+  } else {
+    label.textContent = 'Подключить кошелёк';
+    btn.classList.remove('connected');
+  }
+}
+
+async function fetchTonBalance(rawAddr){
+  try {
+    const res = await fetch('https://toncenter.com/api/v2/getAddressInformation?address='+rawAddr);
+    const data = await res.json();
+    if(data.ok){
+      const bal = (parseInt(data.result.balance)/1e9).toFixed(2);
+      document.getElementById('ton-balance').textContent = bal;
+      tonBalance = parseFloat(bal);
+      upd();
+    }
+  } catch(e){}
+}
+
+async function tcAction(){
+  if(!tonConnectUI) { toast('⚠️ TON Connect не загружен'); return; }
+  if(tcWallet){
+    // уже подключён — открыть депозит
+    openDepModal();
+  } else {
+    // подключить кошелёк
+    try {
+      await tonConnectUI.openModal();
+    } catch(e) {
+      toast('❌ Ошибка подключения');
+    }
+  }
+}
+
+function openDepModal(){
+  document.getElementById('deposit-modal').classList.add('open');
+  document.getElementById('dep-status').textContent = '';
+  document.getElementById('dep-status').className = 'tc-status';
+  selectedDepTon = 0;
+  document.querySelectorAll('.dam').forEach(d=>d.classList.remove('sel'));
+  document.getElementById('dep-confirm-btn').disabled = true;
+}
+
+function closeDepModal(){
+  document.getElementById('deposit-modal').classList.remove('open');
+}
+
+function selectDep(el, amount){
+  document.querySelectorAll('.dam').forEach(d=>d.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedDepTon = amount;
+  document.getElementById('dep-confirm-btn').disabled = false;
+  document.getElementById('dep-status').textContent = '';
+}
+
+async function confirmDeposit(){
+  if(!selectedDepTon || !tcWallet) return;
+  const btn = document.getElementById('dep-confirm-btn');
+  const status = document.getElementById('dep-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Отправка...';
+  status.textContent = 'Открываю Tonkeeper...';
+  status.className = 'tc-status';
+
+  try {
+    const nanoTon = String(Math.round(selectedDepTon * 1e9));
+    await tonConnectUI.sendTransaction({
+      validUntil: Math.floor(Date.now()/1000) + 300,
+      messages: [{
+        address: CASINO_ADDR,
+        amount: nanoTon,
+        payload: '' // можно добавить комментарий
+      }]
+    });
+
+    // Транзакция подписана — начисляем монеты
+    const coinsGained = DEP_TABLE[selectedDepTon] || Math.round(selectedDepTon * COINS_PER_TON);
+    balance += coinsGained;
+    tonBalance += selectedDepTon; // оптимистично, обновится при следующем fetchTonBalance
+    upd();
+
+    status.textContent = '✅ +' + coinsGained.toLocaleString() + ' монет зачислено!';
+    status.className = 'tc-status ok';
+    btn.textContent = '✅ Готово!';
+    toast('💎 Депозит ' + selectedDepTon + ' TON → +' + coinsGained.toLocaleString() + ' монет!');
+
+    // Обновим баланс TON через 5 сек
+    setTimeout(() => fetchTonBalance(tcWallet.account.address), 5000);
+    setTimeout(() => closeDepModal(), 2500);
+
+  } catch(e) {
+    if(e.message && e.message.includes('User rejects')) {
+      status.textContent = '❌ Отменено пользователем';
+    } else {
+      status.textContent = '❌ Ошибка: ' + (e.message || 'попробуй снова');
+    }
+    status.className = 'tc-status err';
+    btn.disabled = false;
+    btn.textContent = 'Отправить TON';
+  }
+}
+
+// Закрытие модалки по фону
+document.getElementById('deposit-modal').addEventListener('click', function(e){
+  if(e.target === this) closeDepModal();
+});
+
 // ── WIN/LOSE OVERLAY SYSTEM ──
 (function(){
   const canvas = document.getElementById('confetti-canvas');
@@ -1642,7 +2012,224 @@ function addWinToTicker(amount, game){
   };
 })();
 
+// ── ROCKET GAME ──
+let rocketBet = 0, rocketActive = false, rocketMult = 1, rocketRAF = null, rocketCrashed = false;
+let rocketHistory = [];
+
+function rocketRandMultiplier(){
+  // Probability distribution:
+  // < 1.5x: ~40% (house edge zone)
+  // 1.5x-10x: ~45% (15% chance above 10x means 85% crash before)
+  // 10x-30x: ~12%
+  // 30x-40x: ~3%
+  // > 40x up to 1000x: ~0.01% type territory
+  const r = Math.random();
+  if(r < 0.40) {
+    // crash between 1.00x and 1.49x
+    return 1 + Math.random() * 0.49;
+  } else if(r < 0.85) {
+    // crash between 1.5x and 10x
+    return 1.5 + Math.random() * 8.5;
+  } else if(r < 0.97) {
+    // 10x to 30x (3% chance)  
+    return 10 + Math.random() * 20;
+  } else if(r < 0.9999) {
+    // 30x to 40x (3%)
+    return 30 + Math.random() * 70;
+  } else {
+    // MEGA: 100x to 1000x (0.01%)
+    return 100 + Math.random() * 900;
+  }
+}
+
+function addRocketHistory(mult, crashed){
+  rocketHistory.unshift({mult, crashed});
+  if(rocketHistory.length > 8) rocketHistory.pop();
+  const container = document.getElementById('rocket-history');
+  container.innerHTML = rocketHistory.map(h => {
+    const m = h.mult.toFixed(2);
+    let cls = 'rh-low';
+    if(h.mult >= 100) cls = 'rh-mega';
+    else if(h.mult >= 10) cls = 'rh-high';
+    else if(h.mult >= 2) cls = 'rh-mid';
+    return '<span class="rh-badge '+cls+'">' + m + 'x</span>';
+  }).join('');
+}
+
+function initRocketCanvas(){
+  const canvas = document.getElementById('rocket-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Draw stars in background
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  for(let i=0;i<60;i++){
+    const sx = Math.random()*canvas.width;
+    const sy = Math.random()*canvas.height;
+    const sr = Math.random()*1.5+0.3;
+    ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function startRocket(){
+  if(rocketActive) return;
+  if(!rocketBet){toast('⚠️ Выбери ставку!'); return;}
+  if(balance < rocketBet){toast('❌ Недостаточно монет!'); return;}
+  
+  balance -= rocketBet; gamesPlayed++; upd();
+  
+  const crashAt = rocketRandMultiplier();
+  const autoVal = parseFloat(document.getElementById('rocket-auto').value);
+  
+  rocketActive = true; rocketMult = 1.0; rocketCrashed = false;
+  
+  document.getElementById('rocket-start-btn').disabled = true;
+  document.getElementById('rocket-cashout-btn').disabled = false;
+  document.getElementById('rocket-result').className = 'result-box';
+  
+  const multEl = document.getElementById('rocket-mult');
+  const emojiEl = document.getElementById('rocket-emoji');
+  const canvas = document.getElementById('rocket-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Reset canvas with stars
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<60;i++){
+    ctx.fillStyle = 'rgba(255,255,255,'+(0.3+Math.random()*0.5)+')';
+    const sx=Math.random()*canvas.width, sy=Math.random()*canvas.height;
+    ctx.beginPath(); ctx.arc(sx,sy,Math.random()*1.5+0.3,0,Math.PI*2); ctx.fill();
+  }
+  
+  let startTime = null;
+  let trailPoints = [];
+  
+  function tick(ts){
+    if(!rocketActive) return;
+    if(!startTime) startTime = ts;
+    const elapsed = (ts - startTime) / 1000;
+    
+    // Multiplier grows: starts slow, accelerates
+    rocketMult = Math.pow(1.0 + elapsed * 0.15, 2.2);
+    if(rocketMult < 1) rocketMult = 1;
+    
+    // Auto cashout
+    if(autoVal > 0 && rocketMult >= autoVal && !rocketCrashed){
+      cashoutRocket(); return;
+    }
+    
+    // Crash check
+    if(rocketMult >= crashAt){
+      rocketMult = crashAt;
+      doRocketCrash(crashAt, ctx, canvas, emojiEl, multEl, trailPoints);
+      return;
+    }
+    
+    // Draw trail
+    const progress = Math.min(rocketMult / Math.max(crashAt, 5), 1);
+    const rx = 40 + progress * (canvas.width - 80);
+    const ry = canvas.height - 30 - progress * (canvas.height - 60);
+    
+    trailPoints.push({x: rx, y: ry, t: ts});
+    // Keep trail limited
+    while(trailPoints.length > 80) trailPoints.shift();
+    
+    // Redraw
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Stars
+    for(let i=0;i<40;i++){
+      ctx.fillStyle = 'rgba(255,255,255,'+(0.2+Math.random()*0.3)+')';
+      ctx.beginPath(); ctx.arc(Math.random()*canvas.width,Math.random()*canvas.height,Math.random()+0.3,0,Math.PI*2); ctx.fill();
+    }
+    // Trail gradient
+    if(trailPoints.length > 1){
+      for(let i=1; i<trailPoints.length; i++){
+        const alpha = i / trailPoints.length;
+        ctx.beginPath();
+        ctx.moveTo(trailPoints[i-1].x, trailPoints[i-1].y);
+        ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+        ctx.strokeStyle = 'rgba(192,130,252,'+alpha+')';
+        ctx.lineWidth = alpha * 3 + 0.5;
+        ctx.stroke();
+      }
+      // Glow dot at head
+      const grd = ctx.createRadialGradient(rx,ry,0,rx,ry,12);
+      grd.addColorStop(0,'rgba(240,201,64,0.9)');
+      grd.addColorStop(1,'rgba(240,201,64,0)');
+      ctx.beginPath(); ctx.arc(rx,ry,12,0,Math.PI*2);
+      ctx.fillStyle = grd; ctx.fill();
+    }
+    
+    // Update rocket emoji position
+    emojiEl.style.left = (rx - 20) + 'px';
+    emojiEl.style.bottom = (canvas.height - ry - 20) + 'px';
+    emojiEl.style.top = 'auto';
+    
+    // Update multiplier display
+    multEl.textContent = rocketMult.toFixed(2) + 'x';
+    const color = rocketMult >= 10 ? '#f0c940' : rocketMult >= 3 ? '#4ade80' : '#fff';
+    multEl.style.color = color;
+    multEl.style.textShadow = '0 0 20px ' + color;
+    
+    rocketRAF = requestAnimationFrame(tick);
+  }
+  
+  rocketRAF = requestAnimationFrame(tick);
+}
+
+function doRocketCrash(crashAt, ctx, canvas, emojiEl, multEl, trailPoints){
+  rocketActive = false; rocketCrashed = true;
+  if(rocketRAF){cancelAnimationFrame(rocketRAF);rocketRAF=null;}
+  
+  document.getElementById('rocket-cashout-btn').disabled = true;
+  document.getElementById('rocket-start-btn').disabled = false;
+  
+  // Flash red
+  ctx.fillStyle = 'rgba(239,68,68,0.3)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  
+  emojiEl.textContent = '💥';
+  multEl.textContent = crashAt.toFixed(2) + 'x';
+  multEl.style.color = '#f87171';
+  multEl.style.textShadow = '0 0 20px #ef4444';
+  
+  totalLosses += rocketBet;
+  upd();
+  
+  addRocketHistory(crashAt, true);
+  
+  const rb = document.getElementById('rocket-result');
+  rb.className = 'result-box result-lose';
+  rb.textContent = '💥 Крашнулось на ' + crashAt.toFixed(2) + 'x! -' + rocketBet + ' монет';
+  
+  setTimeout(() => { emojiEl.textContent = '🚀'; }, 2000);
+  showLoseOverlay();
+}
+
+function cashoutRocket(){
+  if(!rocketActive || rocketCrashed) return;
+  rocketActive = false;
+  if(rocketRAF){cancelAnimationFrame(rocketRAF);rocketRAF=null;}
+  
+  document.getElementById('rocket-cashout-btn').disabled = true;
+  document.getElementById('rocket-start-btn').disabled = false;
+  
+  const mult = parseFloat(rocketMult.toFixed(2));
+  const win = Math.floor(rocketBet * mult);
+  balance += win; totalWins += win; upd();
+  
+  addRocketHistory(mult, false);
+  addWinToTicker(win, 'Ракета 🚀');
+  
+  const rb = document.getElementById('rocket-result');
+  rb.className = 'result-box result-win';
+  rb.textContent = '🎉 Забрал на ' + mult + 'x! +' + win + ' монет';
+  
+  document.getElementById('rocket-mult').style.color = '#4ade80';
+  showWinOverlay(win, mult + 'x 🚀');
+}
+
+
 upd();
+initRocketCanvas();
 renderMinesGrid(false);
 </script>
 
